@@ -47,7 +47,7 @@ namespace
 CPdhCpuFreq::CPdhCpuFreq()
     : CPdhQuery(_T("\\Processor Information(*)\\Processor Frequency"))
     , m_processor_performance_query(_T("\\Processor Information(*)\\% Processor Performance"))
-    , m_processor_base_freq_query(_T("\\Processor Information(*)\\Processor Performance Base Frequency"))
+    , m_processor_base_freq_query(_T("\\Processor Information(*)\\Processor Base Frequency"))
 {}
 
 bool CPdhCpuFreq::GetCpuFreq(float& freq)
