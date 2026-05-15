@@ -4,6 +4,16 @@
 
 namespace
 {
+    struct ProcessorPowerInformationRecord
+    {
+        ULONG Number{};
+        ULONG MaxMhz{};
+        ULONG CurrentMhz{};
+        ULONG MhzLimit{};
+        ULONG MaxIdleState{};
+        ULONG CurrentIdleState{};
+    };
+
     bool GetCpuFreqByPowerInformation(float& freq)
     {
         SYSTEM_INFO system_info{};
@@ -11,9 +21,9 @@ namespace
         if (system_info.dwNumberOfProcessors == 0)
             return false;
 
-        std::vector<PROCESSOR_POWER_INFORMATION> power_info(system_info.dwNumberOfProcessors);
+        std::vector<ProcessorPowerInformationRecord> power_info(system_info.dwNumberOfProcessors);
         if (CallNtPowerInformation(ProcessorInformation, nullptr, 0, power_info.data(),
-            static_cast<ULONG>(power_info.size() * sizeof(PROCESSOR_POWER_INFORMATION))) != 0)
+            static_cast<ULONG>(power_info.size() * sizeof(ProcessorPowerInformationRecord))) != 0)
         {
             return false;
         }
