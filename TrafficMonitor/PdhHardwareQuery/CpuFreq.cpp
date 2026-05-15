@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "CpuFreq.h"
 #include <PowrProf.h>
+#include <map>
 
 namespace
 {
@@ -44,19 +45,40 @@ namespace
 
 CPdhCpuFreq::CPdhCpuFreq()
     : CPdhQuery(_T("\\Processor Information(*)\\Processor Frequency"))
-    , m_processor_performance_query(_T("\\Processor Information(_Total)\\% Processor Performance"))
-    , m_processor_base_freq_query(_T("\\Processor Information(_Total)\\Processor Performance Base Frequency"))
+    , m_processor_performance_query(_T("\\Processor Information(*)\\% Processor Performance"))
+    , m_processor_base_freq_query(_T("\\Processor Information(*)\\Processor Performance Base Frequency"))
 {}
 
 bool CPdhCpuFreq::GetCpuFreq(float& freq)
 {
     // 先使用更实时的性能级别计数器，再回退到旧的频率来源。
-    double processor_performance{};
-    double base_freq_mhz{};
-    if (m_processor_performance_query.QueryValue(processor_performance)
-        && m_processor_base_freq_query.QueryValue(base_freq_mhz)
-        && CalculateCpuFreq(processor_performance, base_freq_mhz, freq))
-        return true;
+    std::vector<CounterValueItem> processor_performance_values;
+    std::vector<CounterValueItem> base_freq_values;
+    if (m_processor_performance_query.QueryValues(processor_performance_values)
+        && m_processor_base_freq_query.QueryValues(base_freq_values))
+    {
+        std::map<std::wstring, double> base_freq_map;
+        for (const auto& value : base_freq_values)
+        {
+            if (value.name == L"_Total" || value.value <= 0)
+                continue;
+            base_freq_map[value.name] = value.value;
+        }
+
+        std::vector<double> realtime_freq_values_mhz;
+        realtime_freq_values_mhz.reserve(processor_performance_values.size());
+        for (const auto& value : processor_performance_values)
+        {
+            if (value.name == L"_Total" || value.value <= 0)
+                continue;
+            auto iter = base_freq_map.find(value.name);
+            if (iter == base_freq_map.end())
+                continue;
+            realtime_freq_values_mhz.push_back(value.value * iter->second / 100.0);
+        }
+        if (CalculateCpuFreq(realtime_freq_values_mhz, freq))
+            return true;
+    }
 
     std::vector<CounterValueItem> values;
     if (QueryValues(values))

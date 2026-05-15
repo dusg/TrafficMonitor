@@ -15,6 +15,7 @@ public:
         {}
 
         using CPdhQuery::QueryValue;
+        using CPdhQuery::QueryValues;
     };
 
     CPdhCpuFreq();
