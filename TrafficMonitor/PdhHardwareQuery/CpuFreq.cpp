@@ -36,6 +36,7 @@ CPdhCpuFreq::CPdhCpuFreq()
 
 bool CPdhCpuFreq::GetCpuFreq(float& freq)
 {
+    // 优先使用实时的电源管理频率，部分设备上的PDH“Processor Frequency”计数器会长期停在固定值。
     if (GetCpuFreqByPowerInformation(freq))
         return true;
 
