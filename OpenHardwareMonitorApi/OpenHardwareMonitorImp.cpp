@@ -9,6 +9,26 @@ namespace OpenHardwareMonitorApi
 {
     static std::wstring error_message;
 
+    static bool CalculateCpuFreq(const std::vector<float>& freq_values_mhz, float& freq)
+    {
+        double total_freq{};
+        size_t valid_freq_count{};
+        for (float freq_value_mhz : freq_values_mhz)
+        {
+            if (freq_value_mhz <= 0)
+                continue;
+
+            total_freq += freq_value_mhz;
+            ++valid_freq_count;
+        }
+        if (valid_freq_count == 0)
+            return false;
+
+        // 使用活跃逻辑核心的平均频率，避免单个核心长期保持高频时界面看起来固定不变。
+        freq = static_cast<float>(total_freq / valid_freq_count / 1000.0);
+        return true;
+    }
+
     //将CRL的String类型转换成C++的std::wstring类型
     static std::wstring ClrStringToStdWstring(System::String^ str)
     {
@@ -128,8 +148,7 @@ namespace OpenHardwareMonitorApi
 
     bool COpenHardwareMonitor::GetCPUFreq(IHardware^ hardware, float& freq) {
         m_all_cpu_clock.clear();
-        float max_clock{};
-        bool freq_acquired = false;
+        std::vector<float> freq_values_mhz;
         for (int i = 0; i < hardware->Sensors->Length; i++)
         {
             if (hardware->Sensors[i]->SensorType == SensorType::Clock)
@@ -139,18 +158,11 @@ namespace OpenHardwareMonitorApi
                 {
                     float current_clock = Convert::ToDouble(hardware->Sensors[i]->Value);
                     m_all_cpu_clock[ClrStringToStdWstring(name)] = current_clock;
-                    if (!freq_acquired || current_clock > max_clock)
-                    {
-                        max_clock = current_clock;
-                        freq_acquired = true;
-                    }
+                    freq_values_mhz.push_back(current_clock);
                 }
             }
         }
-        if (!freq_acquired)
-            return false;
-        freq = max_clock / 1000.0f;
-        return true;
+        return CalculateCpuFreq(freq_values_mhz, freq);
     }
 
     bool COpenHardwareMonitor::GetCpuUsage(IHardware^ hardware, float& cpu_usage)
