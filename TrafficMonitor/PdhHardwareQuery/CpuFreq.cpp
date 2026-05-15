@@ -4,6 +4,8 @@
 
 namespace
 {
+    // 某些 Windows SDK / 工具链组合下无法解析 PROCESSOR_POWER_INFORMATION，
+    // 这里保留与 ProcessorInformation 输出缓冲区一致的结构布局作为回退路径使用。
     struct ProcessorPowerInformationRecord
     {
         ULONG Number{};
@@ -78,6 +80,8 @@ bool CPdhCpuFreq::CalculateCpuFreq(double processor_performance, double base_fre
     if (processor_performance <= 0 || base_freq_mhz <= 0)
         return false;
 
+    // processor_performance 是相对于基础频率的百分比，先除以100得到倍率，
+    // 再将 MHz 转为 GHz。
     freq = static_cast<float>(processor_performance * base_freq_mhz / 100000.0);
     return true;
 }
