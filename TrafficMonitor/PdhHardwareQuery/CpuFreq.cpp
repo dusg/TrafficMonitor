@@ -1,12 +1,13 @@
 #include "stdafx.h"
 #include "CpuFreq.h"
 #include <PowrProf.h>
-#include <map>
+#include <unordered_map>
 
 namespace
 {
-    // 某些 Windows SDK / 工具链组合下无法解析 PROCESSOR_POWER_INFORMATION，
-    // 这里保留与 ProcessorInformation 输出缓冲区一致的结构布局作为回退路径使用。
+    // 某些 Windows SDK / Visual Studio 工具链组合下，PROCESSOR_POWER_INFORMATION
+    // 会出现无法解析或定义不可见的编译问题，因此这里保留与
+    // ProcessorInformation 输出缓冲区一致的结构布局作为回退路径使用。
     struct ProcessorPowerInformationRecord
     {
         ULONG Number{};
@@ -57,7 +58,7 @@ bool CPdhCpuFreq::GetCpuFreq(float& freq)
     if (m_processor_performance_query.QueryValues(processor_performance_values)
         && m_processor_base_freq_query.QueryValues(base_freq_values))
     {
-        std::map<std::wstring, double> base_freq_map;
+        std::unordered_map<std::wstring, double> base_freq_map;
         for (const auto& value : base_freq_values)
         {
             if (value.name == L"_Total" || value.value <= 0)
@@ -102,8 +103,8 @@ bool CPdhCpuFreq::CalculateCpuFreq(double processor_performance, double base_fre
     if (processor_performance <= 0 || base_freq_mhz <= 0)
         return false;
 
-    // processor_performance 是相对于基础频率的百分比，先除以100得到倍率，
-    // 再将 MHz 转为 GHz。
+    // processor_performance 是相对于基础频率的百分比，这里统一除以100000：
+    // 其中 ÷100 用于把百分比转成倍率，÷1000 用于把 MHz 转成 GHz。
     freq = static_cast<float>(processor_performance * base_freq_mhz / 100000.0);
     return true;
 }
