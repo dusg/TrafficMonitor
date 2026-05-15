@@ -42,12 +42,18 @@ namespace
 
 CPdhCpuFreq::CPdhCpuFreq()
     : CPdhQuery(_T("\\Processor Information(*)\\Processor Frequency"))
+    , m_processor_performance_query(_T("\\Processor Information(_Total)\\% Processor Performance"))
+    , m_processor_base_freq_query(_T("\\Processor Information(_Total)\\Processor Performance Base Frequency"))
 {}
 
 bool CPdhCpuFreq::GetCpuFreq(float& freq)
 {
-    // 优先使用实时的电源管理频率，部分设备上的PDH“Processor Frequency”计数器会长期停在固定值。
-    if (GetCpuFreqByPowerInformation(freq))
+    // 先使用更实时的性能级别计数器，再回退到旧的频率来源。
+    double processor_performance{};
+    double base_freq_mhz{};
+    if (m_processor_performance_query.QueryValue(processor_performance)
+        && m_processor_base_freq_query.QueryValue(base_freq_mhz)
+        && CalculateCpuFreq(processor_performance, base_freq_mhz, freq))
         return true;
 
     std::vector<CounterValueItem> values;
@@ -64,7 +70,16 @@ bool CPdhCpuFreq::GetCpuFreq(float& freq)
         if (CalculateCpuFreq(freq_values_mhz, freq))
             return true;
     }
-    return false;
+    return GetCpuFreqByPowerInformation(freq);
+}
+
+bool CPdhCpuFreq::CalculateCpuFreq(double processor_performance, double base_freq_mhz, float& freq)
+{
+    if (processor_performance <= 0 || base_freq_mhz <= 0)
+        return false;
+
+    freq = static_cast<float>(processor_performance * base_freq_mhz / 100000.0);
+    return true;
 }
 
 bool CPdhCpuFreq::CalculateCpuFreq(const std::vector<double>& freq_values_mhz, float& freq)

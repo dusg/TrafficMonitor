@@ -86,6 +86,14 @@ static void TestPluginVersion()
 
 static void TestCpuFreq()
 {
+    float base_freq{};
+    ASSERT(CPdhCpuFreq::CalculateCpuFreq(50, 2000, base_freq));
+    ASSERT(std::fabs(base_freq - 1.0f) < 0.001f);
+
+    float turbo_freq{};
+    ASSERT(CPdhCpuFreq::CalculateCpuFreq(125, 3200, turbo_freq));
+    ASSERT(std::fabs(turbo_freq - 4.0f) < 0.001f);
+
     float idle_freq{};
     float load_freq{};
     ASSERT(CPdhCpuFreq::CalculateCpuFreq({ 5000, 800, 800, 800 }, idle_freq));
