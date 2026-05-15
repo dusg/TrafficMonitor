@@ -127,19 +127,29 @@ namespace OpenHardwareMonitorApi
     }
 
     bool COpenHardwareMonitor::GetCPUFreq(IHardware^ hardware, float& freq) {
+        m_all_cpu_clock.clear();
+        float max_clock{};
+        bool freq_acquired = false;
         for (int i = 0; i < hardware->Sensors->Length; i++)
         {
             if (hardware->Sensors[i]->SensorType == SensorType::Clock)
             {
                 String^ name = hardware->Sensors[i]->Name;
                 if (name != L"Bus Speed")
-                    m_all_cpu_clock[ClrStringToStdWstring(name)] = Convert::ToDouble(hardware->Sensors[i]->Value);
+                {
+                    float current_clock = Convert::ToDouble(hardware->Sensors[i]->Value);
+                    m_all_cpu_clock[ClrStringToStdWstring(name)] = current_clock;
+                    if (!freq_acquired || current_clock > max_clock)
+                    {
+                        max_clock = current_clock;
+                        freq_acquired = true;
+                    }
+                }
             }
         }
-        float sum{};
-        for (auto i : m_all_cpu_clock)
-            sum += i.second;
-        freq = sum / m_all_cpu_clock.size() / 1000.0;
+        if (!freq_acquired)
+            return false;
+        freq = max_clock / 1000.0f;
         return true;
     }
 
