@@ -6,6 +6,7 @@
 #include "IniHelper.h"
 #include "PluginUpdateHelper.h"
 #include "MessageDlg.h"
+#include "PdhHardwareQuery/CpuFreq.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void TestHttpQequest()
@@ -83,6 +84,18 @@ static void TestPluginVersion()
     //int a = 0;
 }
 
+static void TestCpuFreq()
+{
+    float idle_freq{};
+    float load_freq{};
+    ASSERT(CPdhCpuFreq::CalculateCpuFreq({ 5000, 800, 800, 800 }, idle_freq));
+    ASSERT(CPdhCpuFreq::CalculateCpuFreq({ 5000, 4200, 4000, 3800 }, load_freq));
+    ASSERT(load_freq > idle_freq);
+
+    float invalid_freq{};
+    ASSERT(!CPdhCpuFreq::CalculateCpuFreq({ 0, 0, -1 }, invalid_freq));
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 CTest::CTest()
 {
@@ -101,6 +114,7 @@ void CTest::Test()
     //TestDate();
     //TestIni();
     TestPluginVersion();
+    TestCpuFreq();
 }
 
 void CTest::TestCommand()

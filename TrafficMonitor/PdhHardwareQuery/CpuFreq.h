@@ -1,6 +1,7 @@
-﻿#pragma once
+#pragma once
 #include <Pdh.h>
 #include <PdhMsg.h>
+#include <vector>
 #include "PdhQuery.h"
 
 class CPdhCpuFreq : public CPdhQuery
@@ -10,4 +11,5 @@ public:
 
     // 调用此函数获取CPU频率。
     bool GetCpuFreq(float& freq);
+    static bool CalculateCpuFreq(const std::vector<double>& freq_values_mhz, float& freq);
 };

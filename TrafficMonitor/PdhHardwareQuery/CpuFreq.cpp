@@ -18,24 +18,15 @@ namespace
             return false;
         }
 
-        ULONG max_freq{};
-        bool freq_acquired = false;
+        std::vector<double> freq_values_mhz;
+        freq_values_mhz.reserve(power_info.size());
         for (const auto& processor_info : power_info)
         {
             if (processor_info.CurrentMhz == 0)
                 continue;
-
-            if (!freq_acquired || processor_info.CurrentMhz > max_freq)
-            {
-                max_freq = processor_info.CurrentMhz;
-                freq_acquired = true;
-            }
+            freq_values_mhz.push_back(static_cast<double>(processor_info.CurrentMhz));
         }
-        if (!freq_acquired)
-            return false;
-
-        freq = static_cast<float>(max_freq) / 1000.0f;
-        return true;
+        return CPdhCpuFreq::CalculateCpuFreq(freq_values_mhz, freq);
     }
 }
 
@@ -51,24 +42,36 @@ bool CPdhCpuFreq::GetCpuFreq(float& freq)
     std::vector<CounterValueItem> values;
     if (QueryValues(values))
     {
-        double max_freq{};
-        bool freq_acquired = false;
+        std::vector<double> freq_values_mhz;
+        freq_values_mhz.reserve(values.size());
         for (const auto& value : values)
         {
             if (value.name == L"_Total")
                 continue;
-
-            if (!freq_acquired || value.value > max_freq)
-            {
-                max_freq = value.value;
-                freq_acquired = true;
-            }
+            freq_values_mhz.push_back(value.value);
         }
-        if (freq_acquired)
-        {
-            freq = static_cast<float>(max_freq / 1000);
+        if (CalculateCpuFreq(freq_values_mhz, freq))
             return true;
-        }
     }
     return false;
+}
+
+bool CPdhCpuFreq::CalculateCpuFreq(const std::vector<double>& freq_values_mhz, float& freq)
+{
+    double total_freq{};
+    size_t valid_freq_count{};
+    for (double freq_value_mhz : freq_values_mhz)
+    {
+        if (freq_value_mhz <= 0)
+            continue;
+
+        total_freq += freq_value_mhz;
+        ++valid_freq_count;
+    }
+    if (valid_freq_count == 0)
+        return false;
+
+    // 使用活跃逻辑核心的平均频率，避免单个核心长期保持高频时界面看起来固定不变。
+    freq = static_cast<float>(total_freq / valid_freq_count / 1000.0);
+    return true;
 }
