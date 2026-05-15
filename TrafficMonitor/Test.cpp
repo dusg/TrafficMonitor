@@ -94,15 +94,16 @@ static void TestCpuFreq()
     ASSERT(CPdhCpuFreq::CalculateCpuFreq(125, 3200, turbo_freq));
     ASSERT(std::fabs(turbo_freq - 4.0f) < 0.001f);
 
-    float averaged_realtime_freq{};
-    ASSERT(CPdhCpuFreq::CalculateCpuFreq({ 1000, 4000 }, averaged_realtime_freq));
-    ASSERT(std::fabs(averaged_realtime_freq - 2.5f) < 0.001f);
+    float max_realtime_freq{};
+    ASSERT(CPdhCpuFreq::CalculateCpuFreq({ 1000, 4000 }, max_realtime_freq));
+    ASSERT(std::fabs(max_realtime_freq - 4.0f) < 0.001f);
 
     float idle_freq{};
     float load_freq{};
     ASSERT(CPdhCpuFreq::CalculateCpuFreq({ 5000, 800, 800, 800 }, idle_freq));
     ASSERT(CPdhCpuFreq::CalculateCpuFreq({ 5000, 4200, 4000, 3800 }, load_freq));
-    ASSERT(load_freq > idle_freq);
+    ASSERT(std::fabs(idle_freq - 5.0f) < 0.001f);
+    ASSERT(std::fabs(load_freq - 5.0f) < 0.001f);
 
     float invalid_freq{};
     ASSERT(!CPdhCpuFreq::CalculateCpuFreq({ 0, 0, -1 }, invalid_freq));

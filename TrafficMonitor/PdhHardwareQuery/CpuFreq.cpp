@@ -111,20 +111,19 @@ bool CPdhCpuFreq::CalculateCpuFreq(double processor_performance, double base_fre
 
 bool CPdhCpuFreq::CalculateCpuFreq(const std::vector<double>& freq_values_mhz, float& freq)
 {
-    double total_freq{};
-    size_t valid_freq_count{};
+    double max_freq{};
     for (double freq_value_mhz : freq_values_mhz)
     {
         if (freq_value_mhz <= 0)
             continue;
 
-        total_freq += freq_value_mhz;
-        ++valid_freq_count;
+        if (freq_value_mhz > max_freq)
+            max_freq = freq_value_mhz;
     }
-    if (valid_freq_count == 0)
+    if (max_freq <= 0)
         return false;
 
-    // 使用活跃逻辑核心的平均频率，避免单个核心长期保持高频时界面看起来固定不变。
-    freq = static_cast<float>(total_freq / valid_freq_count / 1000.0);
+    // 显示当前最高频的活跃逻辑核心，避免平均值掩盖瞬时升频。
+    freq = static_cast<float>(max_freq / 1000.0);
     return true;
 }
