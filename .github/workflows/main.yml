@@ -1,7 +1,6 @@
 name: Release CI
 on:
   push:
-    branches: ['copilot/fix-cpu-frequency-display']
     tags: ['v*']
   workflow_dispatch:
 
